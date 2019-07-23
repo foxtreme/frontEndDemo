@@ -30,9 +30,7 @@ class App extends Component {
 
   }
   
-
-  render() {
-    
+  renderPurchases(){
     let purchases = this.state.purchases.map((purchase) => {
       return (
         <tr key={purchase.id}>
@@ -47,6 +45,14 @@ class App extends Component {
       )
     });
 
+    return (
+      <tbody>
+            {purchases}
+      </tbody>
+    )
+  }
+
+  renderLoans(){
     let loans = this.state.loans.map((loan) => {
       return (
         <ListGroupItem key={loan.id} onClick={this.load_purchases.bind(this, loan.id)}>
@@ -69,6 +75,41 @@ class App extends Component {
       )
     });
 
+    return(
+        <Card>
+            <CardBody>
+              <CardTitle>Select a product to syndicate</CardTitle>
+              
+              <ListGroup>
+                {loans}
+              </ListGroup>
+              <div className="text-center" style={{ padding: '.5rem' }}>
+                <button className="btn btn-info mr-2">Close</button>
+                <button className="btn btn-info mr-2">Sell all</button>
+              </div>
+            </CardBody>
+          </Card>
+    )
+  }
+
+  renderCreateMessage(){
+    return(
+      <tbody><tr><td>Add a new purchase clicking the + button</td></tr></tbody>
+    )
+  }
+
+  renderTableBody(){
+    if (this.state.currentLoan){
+      console.log(this.state.currentLoan.purchases.length)
+      if (this.state.currentLoan.purchases.length>0){
+          return this.renderPurchases()
+        } 
+      }
+        return this.renderCreateMessage()
+    
+  }
+
+  render() {
     return (
       <div className="App container">
         <Row>
@@ -82,19 +123,7 @@ class App extends Component {
         </Row>
         <Row>
           <Col md="4" lg="4">
-          <Card>
-            <CardBody>
-              <CardTitle>Select a product to syndicate</CardTitle>
-              
-              <ListGroup>
-                {loans}
-              </ListGroup>
-              <div className="text-center" style={{ padding: '.5rem' }}>
-                <button className="btn btn-info mr-2">Close</button>
-                <button className="btn btn-info mr-2">Sell all</button>
-              </div>
-            </CardBody>
-          </Card>
+          {this.renderLoans()}
           </Col>
           <Col md="8" lg="8">
             Product ID {this.state.currentLoan.product_id}
@@ -107,9 +136,7 @@ class App extends Component {
               <th></th>
             </tr>
           </thead>
-          <tbody>
-            {purchases}
-          </tbody>
+          {this.renderTableBody()}
         </Table>
           </Col>
         </Row>
