@@ -6,6 +6,8 @@ import { Table, Button, Row, Col,
 
 class App extends Component {
 
+ 
+
   state = {
     purchases:[],
     loans:[],
@@ -19,7 +21,6 @@ class App extends Component {
     minimumFractionDigits: 0
   })
 
- 
   componentWillMount(){
 
     axios.get('http://localhost:5000/loan').then((response) => {
@@ -31,16 +32,15 @@ class App extends Component {
 
   }
   
-  renderPurchases(){
+  renderPurchases(){    
     let purchases = this.state.purchases.map((purchase) => {
       return (
         <tr key={purchase.id}>
           <td>{purchase.investor_name}</td>
           <td>{purchase.amount}</td>
           <td>{((purchase.amount/this.state.currentLoan.total)*100).toFixed(1)}</td>
-          <td>
-            <Button color="success" size="sm" className="mr-2">Edit</Button>{' '}
-            <Button color="danger" size="sm" className="mr-2">Delete</Button>{' '}
+          <td>  
+            {this.renderActions()}         
           </td>
         </tr>
       )
@@ -51,6 +51,15 @@ class App extends Component {
             {purchases}
       </tbody>
     )
+  }
+
+  renderActions(){
+    return (
+      <div>
+      <Button color="success" size="sm" className="mr-2">Edit</Button>{' '}
+      <Button color="danger" size="sm" className="mr-2">Delete</Button>{' '}
+      </div>
+    );
   }
 
   renderLoans(){
