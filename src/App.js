@@ -9,7 +9,8 @@ class App extends Component {
   state = {
     purchases:[],
     loans:[],
-    currentLoan:0
+    currentLoan:0,
+    currentRemainingAmount:0
   }
 
   curr_formatter = new Intl.NumberFormat('en-US', {
@@ -98,9 +99,20 @@ class App extends Component {
     )
   }
 
+  renderCurrentRemainingAmount(){
+    this.calculateRemaining()
+    if (this.state.currentLoan && this.state.purchases){
+      return (
+        <Row>
+          <Col md="12">Remaining amount ${this.state.currentRemainingAmount} of ${this.state.currentLoan.total}</Col>
+          <Col md="12">{((this.state.currentRemainingAmount/this.state.currentLoan.total)*100).toFixed(1)}%</Col>
+        </Row>
+      )
+    }
+  }
+
   renderTableBody(){
     if (this.state.currentLoan){
-      console.log(this.state.currentLoan.purchases.length)
       if (this.state.currentLoan.purchases.length>0){
           return this.renderPurchases()
         } 
@@ -122,11 +134,19 @@ class App extends Component {
           <Col>ADMIN</Col>
         </Row>
         <Row>
+          <Col>
+          <header>Advances for syndication</header>
+          </Col>
+        </Row>
+        <Row>
           <Col md="4" lg="4">
           {this.renderLoans()}
           </Col>
           <Col md="8" lg="8">
-            Product ID {this.state.currentLoan.product_id}
+            <Row>
+              <Col md="10">Product ID {this.state.currentLoan.product_id}</Col>
+              <Col md="2"><Button onClick={this.calculateRemaining.bind(this)}>+</Button></Col>
+            </Row>
           <Table>
           <thead>
             <tr>
@@ -138,6 +158,7 @@ class App extends Component {
           </thead>
           {this.renderTableBody()}
         </Table>
+          {this.renderCurrentRemainingAmount()}
           </Col>
         </Row>
         <Row >
@@ -159,6 +180,22 @@ class App extends Component {
         currentLoan: response.data.loan
       })
     })
+
+    this.calculateRemaining()
+  }
+
+  async calculateRemaining(){
+    let amountSpent= 0
+    let loan_id = this.state.currentLoan.id
+    if(loan_id){
+      const updatedResponse = await axios.post('http://localhost:5000/purchase/'+loan_id);
+      updatedResponse.data.purchases.forEach(element => {
+        amountSpent+= element.amount
+      });
+      this.setState({
+        currentRemainingAmount: this.state.currentLoan.total-amountSpent
+      })
+    }
   }
 }
 
