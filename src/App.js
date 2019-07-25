@@ -1,8 +1,11 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import { Table, Button, Row, Col,
-  Card, CardBody,
-  CardTitle, ListGroup, ListGroupItem} from 'reactstrap';
+  Card, CardBody, Form, FormGroup,
+  CardTitle, ListGroup, ListGroupItem,
+  Label, Input } from 'reactstrap';
+import { properties } from './properties.js';
+
 
 class App extends Component {
 
@@ -12,7 +15,9 @@ class App extends Component {
     purchases:[],
     loans:[],
     currentLoan:0,
-    currentRemainingAmount:0
+    currentRemainingAmount:0,
+    isCreateActive: false,
+    isDropdownOpen: false
   }
 
   curr_formatter = new Intl.NumberFormat('en-US', {
@@ -21,9 +26,11 @@ class App extends Component {
     minimumFractionDigits: 0
   })
 
+  investors = ['Combinator Y', 'SaaS org', 'General Electric']
+
   componentWillMount(){
 
-    axios.get('http://localhost:5000/loan').then((response) => {
+    axios.get(properties.backendServer+'loan').then((response) => {
       this.setState({
         loans: response.data.loans
       })
@@ -119,6 +126,53 @@ class App extends Component {
       )
     }
   }
+  
+  renderContent(){
+    if(this.state.isCreateActive){
+      return(
+        <div>
+          <Row>
+            Add new purchase
+          </Row>
+          <Row>
+            <Form>
+              <Row form>
+                <Col md="6">
+                  <FormGroup>
+                  
+                  </FormGroup>
+                </Col>
+                <Col md="3">
+                  <FormGroup>
+                  <Label for="amountToSell">Amount to sell</Label>
+                  <Input type="number" name="amountToSell" id="amountToSell"/>
+                  </FormGroup>
+                </Col>
+                <Col md="3">
+                <Col md="2"><Button color="success" onClick={this.toggleCreateView.bind(this)}>Close</Button></Col>
+                </Col>
+              </Row>
+            </Form>
+
+          </Row>
+        </div>
+      )
+    }else{
+      return(
+        <Table>
+            <thead>
+              <tr>
+                <th>Investor name</th>
+                <th>Sold</th>
+                <th>% Purchased</th>
+                <th></th>
+              </tr>
+            </thead>
+            {this.renderTableBody()}
+          </Table>
+      )
+    }
+  }
 
   renderTableBody(){
     if (this.state.currentLoan){
@@ -129,6 +183,7 @@ class App extends Component {
         return this.renderCreateMessage()
     
   }
+
 
   render() {
     return (
@@ -154,19 +209,9 @@ class App extends Component {
           <Col md="8" lg="8">
             <Row>
               <Col md="10">Product ID {this.state.currentLoan.product_id}</Col>
-              <Col md="2"><Button onClick={this.calculateRemaining.bind(this)}>+</Button></Col>
+              <Col md="2"><Button onClick={this.toggleCreateView.bind(this)}>+</Button></Col>
             </Row>
-          <Table>
-          <thead>
-            <tr>
-              <th>Investor name</th>
-              <th>Sold</th>
-              <th>% Purchased</th>
-              <th></th>
-            </tr>
-          </thead>
-          {this.renderTableBody()}
-        </Table>
+          {this.renderContent()}
           {this.renderCurrentRemainingAmount()}
           </Col>
         </Row>
@@ -178,13 +223,13 @@ class App extends Component {
   }
 
   load_purchases(loan_id){
-    axios.post('http://localhost:5000/purchase/'+loan_id).then((response) => {
+    axios.post(properties.backendServer+'purchase/'+loan_id).then((response) => {
       this.setState({
         purchases: response.data.purchases
       })
     })
 
-    axios.get('http://localhost:5000/loan/'+loan_id).then((response) => {
+    axios.get(properties.backendServer+'loan/'+loan_id).then((response) => {
       this.setState({
         currentLoan: response.data.loan
       })
@@ -193,11 +238,17 @@ class App extends Component {
     this.calculateRemaining()
   }
 
+  toggleCreateView(){
+    this.setState({
+      isCreateActive: !this.state.isCreateActive
+    })
+  }
+
   async calculateRemaining(){
     let amountSpent= 0
     let loan_id = this.state.currentLoan.id
     if(loan_id){
-      const updatedResponse = await axios.post('http://localhost:5000/purchase/'+loan_id);
+      const updatedResponse = await axios.post(properties.backendServer+'purchase/'+loan_id);
       updatedResponse.data.purchases.forEach(element => {
         amountSpent+= element.amount
       });
