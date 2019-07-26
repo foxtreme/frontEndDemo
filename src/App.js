@@ -15,15 +15,9 @@ class App extends Component {
     loans:[],
     currentLoan:0,
     currentRemainingAmount:0,
-    isCreateActive: false,
     isEditActive: false,
-    newPurchaseData:{
-      investor_name: 'Y Combinator',
-      amount: 0,
-      loan_id: 0
-    },
     editPurchaseData:{
-      investor_name: '',
+      investor_name: 'Y Combinator',
       amount: 0,
       loan_id: 0
     },
@@ -59,7 +53,7 @@ class App extends Component {
           <td>  
             <div>
               <Button color="success" size="sm" className="mr-2" onClick={this.toggleEditView.bind(this, purchase.id)}>Edit</Button>{' '}
-              <Button color="danger" size="sm" className="mr-2">Delete</Button>{' '}
+              <Button color="danger" size="sm" className="mr-2"onClick={this.deletePurchase.bind(this, purchase.id)}>Delete</Button>{' '}
             </div>       
           </td>
         </tr>
@@ -131,47 +125,25 @@ class App extends Component {
     }
   }
 
-  
-  renderContent(){
-    if(this.state.isCreateActive){
+  renderActions(){
+    if (this.state.editPurchaseId===0){
       return(
         <div>
-          <Row>
-            Add new purchase
-          </Row>
-          <Row>
-          <Col className="text-center"><Label for="amountToSell" className="mr-sm-2">Amount to sell</Label></Col>
-          </Row>
-          <Row>
-          <Form inline>
-            <FormGroup className="mb-2 mr-sm-2 mb-sm-0">
-            <Input type="select" name="investorName" id="investorName"  value={this.state.newPurchaseData.investor_name} onChange={(e) => {
-                let {newPurchaseData} = this.state;
-                newPurchaseData.investor_name = e.target.value;
-                newPurchaseData.loan_id = this.state.currentLoan.id
-                this.setState({newPurchaseData})
-              }}>
-              <option value="Y Combinator" defaultValue>Y Combinator</option>
-              <option value="SaaStr">SaaStr</option>
-              <option value="IndieGo">IndieGo</option>
-            </Input>
-            </FormGroup>
-            <FormGroup className="mb-2 mr-sm-2 mb-sm-0">
-              <Input type="number" name="amountToSell" min="1" id="amountToSell" value={this.state.newPurchaseData.amount} onChange={(e) => {
-                let {newPurchaseData} = this.state;
-                newPurchaseData.amount = e.target.value;
-                newPurchaseData.loan_id = this.state.currentLoan.id
-                this.setState({newPurchaseData})
-              }}/>
-            </FormGroup>
-            <Button color="primary" className="mr-1" onClick={this.savePurchase.bind(this)}>Save</Button>
-            <Button color="danger" className="mr-1" onClick={this.deletePurchase.bind(this)}>Delete</Button>
-          </Form>
-
-          </Row>
+          <Button color="primary" className="mr-1" onClick={this.savePurchase.bind(this)}>Save</Button>
         </div>
       )
-    } else if(this.state.isEditActive){
+    } else{
+      return(
+        <div>
+          <Button color="primary" className="mr-1" onClick={this.editPurchase.bind(this)}>Save</Button>
+          <Button color="danger" className="mr-1" onClick={this.deletePurchase.bind(this,this.state.editPurchaseId)}>Delete</Button>
+        </div>
+      )
+    }
+  }
+  
+  renderContent(){
+    if(this.state.isEditActive){
       return(
         <div>
           <Row>
@@ -202,8 +174,7 @@ class App extends Component {
                 this.setState({editPurchaseData})
               }}/>
             </FormGroup>
-            <Button color="primary" className="mr-1" onClick={this.editPurchase.bind(this)}>Save</Button>
-            <Button color="danger" className="mr-1" onClick={this.deletePurchase.bind(this)}>Delete</Button>
+            {this.renderActions()}
           </Form>
           </Row>
         </div>
@@ -239,7 +210,7 @@ class App extends Component {
   renderAddPurchaseButton(){
     if(this.state.currentLoan!==0){
       return(
-        <Button  onClick={this.toggleCreateView.bind(this)}>+</Button>
+        <Button  onClick={this.toggleEditView.bind(this,0)}>+</Button>
       )
     }
   }
@@ -297,19 +268,11 @@ class App extends Component {
     this.calculateRemaining()
   }
 
-  toggleCreateView(){
-    this.setState({
-      isCreateActive: !this.state.isCreateActive
-    })
-  }
-
   toggleEditView(purchaseId){
-    console.log(purchaseId)
     this.setState({
       isEditActive: !this.state.isEditActive,
       editPurchaseId: purchaseId
     })
-    console.log(this.state.editPurchaseId)
   }
 
   async calculateRemaining(){
@@ -327,16 +290,17 @@ class App extends Component {
   }
 
   savePurchase(){
-    axios.post(properties.backendServer+'purchase', this.state.newPurchaseData).then((response) => {
+    axios.post(properties.backendServer+'purchase', this.state.editPurchaseData).then((response) => {
       let {purchases} = this.state;
       purchases.push(response.data.purchase);
-      this.setState({purchases, newPurchaseData:{
+      console.log(response.data.purchase)
+      this.setState({purchases, editPurchaseData:{
         investor_name: 'Y Combinator',
         amount: 0,
         loan_id: 0
       }})
     })    
-    this.toggleCreateView()
+    this.toggleEditView()
   }
   
   async editPurchase(){
@@ -346,15 +310,17 @@ class App extends Component {
           amount: 0,
           loan_id: 0
         }})
-      
-    this.toggleEditView()
-    this.load_purchases(this.state.currentLoan.id)
+        this.load_purchases(this.state.currentLoan.id)
+        this.toggleEditView()
   }
 
-  deletePurchase(){
-
-    this.toggleCreateView()
-    this.toggleEditView()
+  async deletePurchase(purchaseId){
+    console.log(purchaseId)
+    if(purchaseId!==0){
+      await axios.delete(properties.backendServer+'purchase/'+purchaseId);
+      this.load_purchases(this.state.currentLoan.id)
+      if(this.state.isEditActive) {this.toggleEditView(0)}
+    }
   }
 }
 
