@@ -3,37 +3,42 @@ import axios from 'axios';
 import { Table, Button, Row, Col,
   Card, CardBody, Form, FormGroup,
   CardTitle, ListGroup, ListGroupItem,
-  Label, Input } from 'reactstrap';
+  Label, Input, Navbar, NavbarBrand, NavItem,
+  NavLink, UncontrolledDropdown, DropdownToggle } from 'reactstrap';
 import { properties } from './properties.js';
-
+import './App.sass';
+import logo from './logo.png';
 
 class App extends Component {
 
 
-  state = {
-    purchases:[],
-    loans:[],
-    currentLoan:0,
-    currentRemainingAmount:0,
-    isEditActive: false,
-    editPurchaseData:{
-      investor_name: 'Y Combinator',
-      amount: 0,
-      loan_id: 0
-    },
-    editPurchaseId:0
-  }
   
-  investors = ['Combinator Y', 'SaaS org', 'General Electric']
-  curr_formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0
-  })
-
+  constructor(){
+    super();
+    this.state = {
+          purchases:[],
+          loans:[],
+          currentLoan:0,
+          currentRemainingAmount:0,
+          editPurchaseId:0,
+          isEditActive: false,
+          isLoanSelected: false,
+          editPurchaseData:{
+            investor_name: 'Y Combinator',
+            amount: 0,
+            loan_id: 0
+          }
+        }
+        
+        this.investors = ['Combinator Y', 'SaaS org', 'General Electric']
+        this.curr_formatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0
+        })
+  }
 
   componentWillMount(){
-
     axios.get(properties.backendServer+'loan').then((response) => {
       this.setState({
         loans: response.data.loans
@@ -52,8 +57,8 @@ class App extends Component {
           <td>{((purchase.amount/this.state.currentLoan.total)*100).toFixed(1)}</td>
           <td>  
             <div>
-              <Button color="success" size="sm" className="mr-2" onClick={this.toggleEditView.bind(this, purchase.id)}>Edit</Button>{' '}
-              <Button color="danger" size="sm" className="mr-2"onClick={this.deletePurchase.bind(this, purchase.id)}>Delete</Button>{' '}
+              <Button size="sm" className="btn mr-1 roundedBtn secondary" onClick={this.toggleEditView.bind(this, purchase.id)}>Edit</Button>{' '}
+              <Button size="sm" className="btn mr-1 roundedBtn outline"onClick={this.deletePurchase.bind(this, purchase.id)}>Delete</Button>{' '}
             </div>       
           </td>
         </tr>
@@ -68,16 +73,17 @@ class App extends Component {
   }
 
   renderLoans(){
+    let loanItemClass = this.state.isLoanSelected? "activeLoanItem":"inactiveLoanItem"
     let loans = this.state.loans.map((loan) => {
       return (
-        <ListGroupItem key={loan.id} onClick={this.load_purchases.bind(this, loan.id)}>
+        <ListGroupItem key={loan.id} onClick={this.load_purchases.bind(this, loan.id)} className={loanItemClass}>
           <div className="clearfix">
             <div className="float-left">
-              <Row>Product ID</Row>
+              <Row className="product">Product ID</Row>
               <Row>{loan.product_id}</Row>
             </div>
             <div className="float-right">
-              <Row className="text-right">Advance</Row>
+              <Row className="text-right advance">Advance</Row>
               <Row className="text-right">{loan.advance_date.substring(0,10)}</Row>
             </div>
           </div>
@@ -93,14 +99,14 @@ class App extends Component {
     return(
         <Card>
             <CardBody>
-              <CardTitle>Select a product to syndicate</CardTitle>
+              <CardTitle className="loanHeader">Select a product to syndicate</CardTitle>
               
               <ListGroup>
                 {loans}
               </ListGroup>
               <div className="text-center" style={{ padding: '.5rem' }}>
-                <button className="btn btn-info mr-2">Close</button>
-                <button className="btn btn-info mr-2">Sell all</button>
+                <button className="btn mr-2 roundedBtn">Close</button>
+                <button className="btn mr-2 roundedBtn">Sell</button>
               </div>
             </CardBody>
           </Card>
@@ -117,7 +123,7 @@ class App extends Component {
     this.calculateRemaining()
     if (this.state.currentLoan && this.state.purchases){
       return (
-        <Row>
+        <Row className="tableFooter">
           <Col md="12">Remaining amount ${this.state.currentRemainingAmount} of ${this.state.currentLoan.total}</Col>
           <Col md="12">{((this.state.currentRemainingAmount/this.state.currentLoan.total)*100).toFixed(1)}%</Col>
         </Row>
@@ -129,14 +135,15 @@ class App extends Component {
     if (this.state.editPurchaseId===0){
       return(
         <div>
-          <Button color="primary" className="mr-1" onClick={this.savePurchase.bind(this)}>Save</Button>
+          <Button className="btn mr-1 roundedBtn secondary" onClick={this.savePurchase.bind(this)}>Save</Button>
+          <Button className="btn mr-1" close />
         </div>
       )
     } else{
       return(
         <div>
-          <Button color="primary" className="mr-1" onClick={this.editPurchase.bind(this)}>Save</Button>
-          <Button color="danger" className="mr-1" onClick={this.deletePurchase.bind(this,this.state.editPurchaseId)}>Delete</Button>
+          <Button className="btn mr-1 roundedBtn secondary" onClick={this.editPurchase.bind(this)}>Save</Button>
+          <Button className="btn mr-1 roundedBtn outline" onClick={this.deletePurchase.bind(this,this.state.editPurchaseId)}>Delete</Button>
         </div>
       )
     }
@@ -145,7 +152,7 @@ class App extends Component {
   renderContent(){
     if(this.state.isEditActive){
       return(
-        <div>
+        <div className="editPurchase">
           <Row>
             Add new purchase
           </Row>
@@ -167,7 +174,7 @@ class App extends Component {
             </Input>
             </FormGroup>
             <FormGroup className="mb-2 mr-sm-2 mb-sm-0">
-              <Input type="number" name="amountToSell" min="1" id="amountToSell" value={this.state.editPurchaseData.amount} onChange={(e) => {
+              <Input type="number" name="amountToSell" id="amountToSell" value={this.state.editPurchaseData.amount} onChange={(e) => {
                 let {editPurchaseData} = this.state;
                 editPurchaseData.amount = e.target.value;
                 editPurchaseData.loan_id = this.state.currentLoan.id
@@ -182,12 +189,12 @@ class App extends Component {
     }
      else{
       return(
-        <Table>
-            <thead>
+        <Table hover>
+            <thead className="purchaseHeader">
               <tr>
-                <th>Investor name</th>
-                <th>Sold</th>
-                <th>% Purchased</th>
+                <th scope="row">Investor name</th>
+                <th scope="row">Sold</th>
+                <th scope="row">% Purchased</th>
                 <th></th>
               </tr>
             </thead>
@@ -210,7 +217,7 @@ class App extends Component {
   renderAddPurchaseButton(){
     if(this.state.currentLoan!==0){
       return(
-        <Button  onClick={this.toggleEditView.bind(this,0)}>+</Button>
+        <Button className="addPurchaseButton" onClick={this.toggleEditView.bind(this,0)}>+</Button>
       )
     }
   }
@@ -219,26 +226,43 @@ class App extends Component {
     return (
       <div className="App container">
         <Row>
-          <Col></Col>
-          <Col>APPLICATION</Col>
-          <Col>SEARCH</Col>
-          <Col>QA</Col>
-          <Col>DASHBOARD</Col>
-          <Col>USER ADMIN</Col>
-          <Col>ADMIN</Col>
+          <Navbar className="navBar" light expand="md">   
+          < NavbarBrand href="/"><img src={logo} alt="B"/></NavbarBrand>
+            <NavItem>
+              <NavLink className="navLink" href="/">APPLICATION</NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink className="navLink" href="/">SEARCH</NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink className="navLink" href="/">QA</NavLink>
+            </NavItem>
+            <NavItem style={{float: "right"}}>
+              <NavLink className="navLink" href="/">DASHBOARD</NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink className="navLink" href="/">USER ADMIN</NavLink>
+            </NavItem>
+            <UncontrolledDropdown nav inNavbar >
+              <DropdownToggle nav caret className="navAdmin">
+                ADMIN
+              </DropdownToggle>
+            </UncontrolledDropdown>
+         </Navbar>
         </Row>
         <Row>
           <Col>
-          <header>Advances for syndication</header>
+          <header><h3 style={{color:"white", fontWeight:200}}>Advances for syndication</h3></header>
           </Col>
         </Row>
         <Row>
-          <Col md="4" lg="4">
+          <Col md="4" lg="4" className="leftBlock">
           {this.renderLoans()}
           </Col>
-          <Col md="8" lg="8">
-            <Row>
-              <Col md="10">Product ID {this.state.currentLoan.product_id}</Col>
+          <Col md="8" lg="8" className="rightBlock">
+            <Row className="purchaseHeader" style={{height:"40px", padding: "2px"}}>
+              <Col md="5">Product ID {this.state.currentLoan.product_id}</Col>
+              <Col></Col>
               <Col md="2">{this.renderAddPurchaseButton()}</Col>
             </Row>
           {this.renderContent()}
@@ -246,13 +270,16 @@ class App extends Component {
           </Col>
         </Row>
         <Row >
-          <Col className="text-center small">&copy; LendingFront 2016</Col>
+          <Col>
+          <footer className="text-center text-muted">&copy; LendingFront 2016</footer>
+          </Col>
         </Row>
       </div>
     );  
   }
 
   load_purchases(loan_id){
+    this.toggleLoanStyle()
     axios.post(properties.backendServer+'purchase/'+loan_id).then((response) => {
       this.setState({
         purchases: response.data.purchases
@@ -272,6 +299,12 @@ class App extends Component {
     this.setState({
       isEditActive: !this.state.isEditActive,
       editPurchaseId: purchaseId
+    })
+  }
+
+  toggleLoanStyle(){
+    this.setState({
+      isLoanSelected: !this.state.isLoanSelected
     })
   }
 
